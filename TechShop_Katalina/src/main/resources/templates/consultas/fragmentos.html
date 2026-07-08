@@ -2,16 +2,16 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:th="http://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
-    <head th:replace="~{general/plantilla :: head}"/>
+    <head th:replace="~{general/fragmentos :: head}"/>
     <body>
         <!-- fragmento 1 para Agregar producto en ventana modal -->
         <section th:fragment="tabs" class="py-3 mb-4">
-            <div class="d-flex justify-content-center px-5"> 
+            <div class="d-flex justify-content-center px-5">
                 <ul class="nav nav-underline">
                     <li class="nav-item">
-                        <a th:href="@{/}" 
+                        <a th:href="@{/}"
                            th:classappend="${idCategoriaActual == null} ? 'active'"
-                           class="nav-link" 
+                           class="nav-link"
                            aria-current="page">
                             [[#{pruebas.todas}]]
                         </a>
@@ -33,8 +33,8 @@
                 <div th:each="p : ${productos}" class="col">
                     <div class="card h-100 shadow-sm">
                         <div class="d-flex justify-content-center align-items-center bg-light p-3" style="height: 200px;">
-                            <img th:src="${p.rutaImagen}" class="img-fluid" 
-                                 th:alt="${p.descripcion}" 
+                            <img th:src="${p.rutaImagen}" class="img-fluid"
+                                 th:alt="${p.descripcion}"
                                  style="max-height: 100%; object-fit: contain;"/>
                         </div>
                         <div class="card-header bg-white">
@@ -51,8 +51,8 @@
                             </div>
                             <form th:action="@{/carrito/agregar}" th:method="POST" class="d-inline">
                                 <input type="hidden" th:value="${p.idProducto}" name="idProducto"/>
-                                <button type="submit" 
-                                        class="btn btn-sm btn-primary" 
+                                <button type="submit"
+                                        class="btn btn-sm btn-primary"
                                         th:disabled="${p.existencias == 0}"
                                         onclick="addCart(this.form)">
                                     <i class="fas fa-cart-plus"></i>
@@ -63,5 +63,38 @@
                 </div>
             </div>
         </section>
+
+        <!-- fragmento 3 para los formularios de consulta -->
+        <section th:fragment="consultas" class="row row-cols-4 p-2">
+            <div th:replace="~{this :: formConsulta('primary', #{consultas.derivadas}, '/consultas/consultaDerivadas')}"></div>
+            <div th:replace="~{this :: formConsulta('warning', #{consultas.jpql}, '/consultas/consultaJPQL')}"></div>
+            <div th:replace="~{this :: formConsulta('success', #{consultas.sql}, '/consultas/consultaSQL')}"></div>
+            <div class="card"><p>Acá va su Práctica #2</p></div>
+        </section>
+
+        <div th:fragment="formConsulta(colorForm, textoForm, urlForm)">
+            <div class="card p-2">
+                <form method="post" th:action="@{${urlForm}}" class="was-validated">
+                    <div class="card-header text-center text-white" th:classappend="'bg-' + ${colorForm}">
+                        <h5 th:text="${textoForm}">Texto Formulario</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label th:text="#{consultas.precio.inferior}">Precio Inferior</label>
+                            <input type="number" name="precioInf" th:value="${precioInf}" class="form-control" min="0" required="required"/>
+                        </div>
+                        <div class="mb-3">
+                            <label th:text="#{consultas.precio.superior}">Precio Superior</label>
+                            <input type="number" name="precioSup" th:value="${precioSup}" class="form-control" min="0" required="required"/>
+                        </div>
+                    </div>
+                    <div class="card-footer text-center">
+                        <button type="submit" class="btn text-white" th:classappend="'btn-' + ${colorForm}">
+                            <i class="fa-solid fa-magnifying-glass"></i> [[${textoForm}]]
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </body>
 </html>
