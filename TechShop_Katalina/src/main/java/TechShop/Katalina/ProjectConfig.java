@@ -1,10 +1,20 @@
 package TechShop.Katalina;
 
+import TechShop.Katalina.domain.Ruta;
+import TechShop.Katalina.service.RutaService;
 import java.util.Locale;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.context.support.ResourceBundleMessageSource;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.servlet.LocaleResolver;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
@@ -17,6 +27,10 @@ import org.thymeleaf.templatemode.TemplateMode;
 @Configuration
 public class ProjectConfig implements WebMvcConfigurer {
 
+    @Autowired
+    private RutaService rutaService;
+
+    /* Los siguiente métodos son para implementar el tema de seguridad dentro del proyecto */
     @Override
     public void addViewControllers(ViewControllerRegistry registry) {
         registry.addViewController("/").setViewName("index");
@@ -24,13 +38,15 @@ public class ProjectConfig implements WebMvcConfigurer {
         registry.addViewController("/multimedia").setViewName("multimedia");
         registry.addViewController("/iframes").setViewName("iframes");
         registry.addViewController("/login").setViewName("login");
+        registry.addViewController("/acceso_denegado").setViewName("acceso_denegado");
         registry.addViewController("/registro/nuevo").setViewName("/registro/nuevo");
     }
 
+    /* El siguiente método se utilizar para publicar en la nube, independientemente  */
     @Bean
     public SpringResourceTemplateResolver templateResolver_0() {
         SpringResourceTemplateResolver resolver = new SpringResourceTemplateResolver();
-        resolver.setPrefix("classpath:/templates");   // ← falta la /
+        resolver.setPrefix("classpath:/templates");
         resolver.setSuffix(".html");
         resolver.setTemplateMode(TemplateMode.HTML);
         resolver.setOrder(0);
@@ -59,6 +75,7 @@ public class ProjectConfig implements WebMvcConfigurer {
         registro.addInterceptor(localeChangeInterceptor());
     }
 
+    //Bean para poder acceder a los messages.properties en código...
     @Bean("messageSource")
     public MessageSource messageSource() {
         ResourceBundleMessageSource messageSource = new ResourceBundleMessageSource();
@@ -66,4 +83,53 @@ public class ProjectConfig implements WebMvcConfigurer {
         messageSource.setDefaultEncoding("UTF-8");
         return messageSource;
     }
+
+    //Este método es quien genera el proceso de autorización, leyendo las rutas desde la base de datos...
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        var rutas = rutaService.getRutas();
+
+        http.authorizeHttpRequests(requests -> {
+            for (Ruta ruta : rutas) {
+                if (ruta.isRequiereRol()) {
+                    requests.requestMatchers(ruta.getRuta()).hasRole(ruta.getRol().getRol());
+                } else {
+                    requests.requestMatchers(ruta.getRuta()).permitAll();
+                }
+            }
+            requests.anyRequest().authenticated();
+        });
+        http.formLogin(form -> form // Configuración de formulario de login
+                .loginPage("/login")
+                .loginProcessingUrl("/login")
+                .defaultSuccessUrl("/", true)
+                .failureUrl("/login?error=true")
+                .permitAll()
+        ).logout(logout -> logout // Configuración de logout
+                .logoutUrl("/logout")
+                .logoutSuccessUrl("/login?logout=true")
+                .invalidateHttpSession(true)
+                .deleteCookies("JSESSIONID")
+                .permitAll()
+        ).exceptionHandling(exceptions -> exceptions // Manejo de excepciones
+                .accessDeniedPage("/acceso_denegado")
+        ).sessionManagement(session -> session // Configuración de sesiones
+                .maximumSessions(1)
+                .maxSessionsPreventsLogin(false)
+        );
+        return http.build();
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Autowired
+    public void configurerGlobal(AuthenticationManagerBuilder build,
+            @Lazy PasswordEncoder passwordEncoder,
+            @Lazy UserDetailsService userDetailsService) throws Exception {
+        build.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder);
+    }
+
 }
