@@ -1,7 +1,7 @@
 package TechShop.Katalina.service;
 
 import TechShop.Katalina.domain.Usuario;
-import TechShop.Katalina.UsuarioRepository;
+import TechShop.Katalina.repository.UsuarioRepository;
 import jakarta.servlet.http.HttpSession;
 import java.util.stream.Collectors;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
