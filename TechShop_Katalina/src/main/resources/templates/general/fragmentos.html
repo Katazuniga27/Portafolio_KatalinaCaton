@@ -18,6 +18,8 @@
     <script src="/webjars/popper.js/2.11.7/umd/popper.min.js"></script>
     <script src="/webjars/bootstrap/5.3.7/js/bootstrap.min.js"></script>
     <link th:href="@{/css/estilos.css}" rel="stylesheet"/>
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
 </head>
 
 <body>
